@@ -12,65 +12,68 @@
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
         }
-        .nav-menu { transition: transform 0.3s ease-in-out; }
-        .nav-menu.open { transform: translateX(0); }
+        .nav-menu { transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out; }
+        .nav-menu.open { transform: translateX(0); opacity: 1; }
         @media (max-width: 768px) {
-            .nav-menu { transform: translateX(100%); }
+            .nav-menu { transform: translateX(100%); opacity: 0; }
         }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased min-h-screen flex flex-col">
     <nav class="bg-white shadow-md px-2 sm:px-4 md:px-6 py-3 sticky top-0 z-50">
         <div class="container mx-auto flex items-center justify-between">
-            <!-- Left Side (Always Visible) -->
-            <div class="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
+            <!-- Left Side (Logo Always Visible) -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
                 <a href="{% url 'chat:chat_list' %}" class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center space-x-2">
                     <i class="fas fa-comment-alt"></i>
                     <span class="truncate">FreeChart</span>
                 </a>
             </div>
             <!-- Hamburger Toggle (Mobile/Tablet) -->
-            <button class="md:hidden text-gray-600 hover:text-gray-800 focus:outline-none" id="menu-toggle" aria-label="Toggle Menu">
+            <button class="md:hidden text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded" id="menu-toggle" aria-label="Toggle Navigation Menu">
                 <i class="fas fa-bars text-xl sm:text-2xl"></i>
             </button>
             <!-- Right Side (Nav Menu) -->
-            <div class="nav-menu fixed md:static top-14 right-0 w-64 md:w-auto bg-white md:bg-transparent shadow-lg md:shadow-none px-4 py-6 md:p-0 flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-4 lg:space-x-6">
-                <a href="{% url 'landing_page' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                    <i class="fas fa-home"></i>
+            <div class="nav-menu fixed md:static top-14 right-0 w-72 md:w-auto bg-white md:bg-transparent shadow-lg md:shadow-none px-4 py-4 md:p-0 flex flex-col md:flex-row items-start md:items-center space-y-3 md:space-y-0 md:space-x-4 lg:space-x-6">
+                <!-- Core Navigation -->
+                <a href="{% url 'landing_page' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                    <i class="fas fa-home w-5 text-center"></i>
                     <span>Home</span>
                 </a>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'chat:chat_list' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-comments"></i>
+                    <a href="{% url 'chat:chat_list' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-comments w-5 text-center"></i>
                         <span>Chats</span>
                     </a>
-                    <a href="{% url 'chat:user_list' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-users"></i>
+                    <a href="{% url 'chat:user_list' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-users w-5 text-center"></i>
                         <span>Users</span>
                     </a>
-                    <span class="text-gray-600 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-user-circle"></i>
-                        <span class="truncate max-w-[100px] sm:max-w-[120px]">Hello, {{ user.username }}</span>
-                    </span>
-                    <a href="{% url 'chat:group_create' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-user-plus"></i>
+                    <a href="{% url 'chat:group_create' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-user-plus w-5 text-center"></i>
                         <span>New Group</span>
                     </a>
-                    <a href="{% url 'chat:profile' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-id-card"></i>
+                    <!-- User Section Divider (Mobile Only) -->
+                    <div class="md:hidden border-t border-gray-200 w-full my-2"></div>
+                    <span class="text-gray-600 flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0">
+                        <i class="fas fa-user-circle w-5 text-center"></i>
+                        <span class="truncate max-w-[150px]">Hello, {{ user.username }}</span>
+                    </span>
+                    <a href="{% url 'chat:profile' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-id-card w-5 text-center"></i>
                         <span>Profile</span>
                     </a>
-                    <a href="{% url 'chat:logout' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-sign-out-alt"></i>
+                    <a href="{% url 'chat:logout' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-sign-out-alt w-5 text-center"></i>
                         <span>Logout</span>
                     </a>
                 {% else %}
-                    <a href="{% url 'auth:login' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-sign-in-alt"></i>
+                    <a href="{% url 'auth:login' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-sign-in-alt w-5 text-center"></i>
                         <span>Login</span>
                     </a>
-                    <a href="{% url 'chat:register' %}" class="text-blue-500 hover:text-blue-700 flex items-center space-x-2 w-full md:w-auto">
-                        <i class="fas fa-user-plus"></i>
+                    <a href="{% url 'chat:register' %}" class="text-blue-500 hover:text-blue-700 hover:bg-gray-100 md:hover:bg-transparent flex items-center space-x-3 w-full md:w-auto px-2 py-2 md:p-0 rounded-md">
+                        <i class="fas fa-user-plus w-5 text-center"></i>
                         <span>Register</span>
                     </a>
                 {% endif %}

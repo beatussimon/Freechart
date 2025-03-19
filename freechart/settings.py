@@ -5,7 +5,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'your-secret-key-here'  # Replace with a secure key
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ["freechart.onrender.com", "127.0.0.1", "localhost"]
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',

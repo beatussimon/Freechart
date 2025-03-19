@@ -1,0 +1,193 @@
+{% extends 'chat/chat_list.html' %}
+{% load chat_filters %}
+
+{% block chat_content %}
+<div class="flex flex-col h-full">
+    <div class="p-4 bg-white shadow-sm flex items-center justify-between sticky top-0 z-10">
+        <div class="flex items-center">
+            {% if chat.is_group %}
+            <span class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold text-lg">{{ chat.name|first }}</span>
+            {% else %}
+            {% if other_user %}
+            <img src="{{ other_user.profile.avatar.url }}" alt="Avatar" class="w-10 h-10 rounded-full object-cover">
+            {% else %}
+            <span class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold text-lg">?</span>
+            {% endif %}
+            {% endif %}
+            <h2 class="text-lg md:text-xl font-semibold text-gray-800 ml-3 truncate">
+                {% if chat.is_group %}
+                {{ chat.name }}
+                {% else %}
+                {% if chat.name %}
+                {{ chat.name }}
+                {% elif other_user %}
+                {{ other_user.username }}
+                {% else %}
+                Unknown User
+                {% endif %}
+                {% endif %}
+            </h2>
+        </div>
+        {% if chat.is_group and user in chat.admins.all %}
+        <a href="{% url 'chat:group_invite' chat.id %}" class="text-blue-500 hover:underline text-sm md:text-base">Invite</a>
+    {% endif %}
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" id="messages">
+        {% for message in messages %}
+        <div class="flex {% if message.sender == user %} justify-end {% else %} justify-start {% endif %}" data-message-id="{{ message.id }}">
+            <div class="max-w-[80%] sm:max-w-[60%] md:max-w-[50%] p-3 rounded-lg {% if message.sender == user %} bg-blue-500 text-white {% else %} bg-gray-200 text-gray-800 {% endif %} shadow relative group">
+                {% if message.file %}
+                <a href="{{ message.file.url }}" target="_blank" class="block mb-2">
+                    {% if message.file.name|lower|endswith:'.jpg' or message.file.name|lower|endswith:'.png' %}
+                    <img src="{{ message.file.url }}" alt="Uploaded image" class="max-w-full rounded-lg shadow-sm">
+                    {% elif message.file.name|lower|endswith:'.mp4' %}
+                    <video controls class="max-w-full rounded-lg"><source src="{{ message.file.url }}" type="video/mp4"></video>
+                    {% else %}
+                    <span class="text-sm underline hover:text-blue-300">{{ message.file.name }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+                <p class="text-sm md:text-base break-words">{{ message.content }}</p>
+                <p class="text-xs mt-1 opacity-75">{{ message.timestamp|date:"H:i" }}</p>
+                {% if message.is_read and message.sender != user %}
+                <span class="text-xs text-green-500">✓ Read</span>
+                {% endif %}
+                <div class="mt-1 flex space-x-1">
+                    {% for reaction in message.reactions.all %}
+                    <span class="text-sm">{{ reaction.emoji }}</span>
+                    {% endfor %}
+                </div>
+                {% if message.sender == user %}
+                <button class="delete-btn absolute top-0 right-0 p-1 text-red-500 opacity-0 group-hover:opacity-100" data-message-id="{{ message.id }}">✕</button>
+                {% endif %}
+            </div>
+            <div class="ml-2 flex space-x-1 opacity-0 group-hover:opacity-100">
+                <button class="reaction-btn text-sm" data-message-id="{{ message.id }}" data-emoji="👍">👍</button>
+                <button class="reaction-btn text-sm" data-message-id="{{ message.id }}" data-emoji="❤️">❤️</button>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-gray-500 mt-10">No messages yet. Start chatting!</p>
+        {% endfor %}
+    </div>
+    <div id="typing" class="p-2 text-sm text-gray-500"></div>
+    <form method="post" enctype="multipart/form-data" class="p-4 bg-white shadow-sm sticky bottom-0 z-10">
+        {% csrf_token %}
+        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
+            <div class="w-full sm:flex-1">{{ form.content }}</div>
+            <label for="file-input" class="cursor-pointer p-2 text-gray-600 hover:text-blue-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 002.828 2.828L17 10.828V15m0 0v6a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h6m4 0h6a2 2 0 012 2v6"></path>
+                </svg>
+            </label>
+            {{ form.file }}
+            <button type="submit" class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">Send</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<!-- JavaScript remains unchanged -->
+
+<script>
+    if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+    }
+
+    const ws = new WebSocket('ws://' + window.location.host + '/ws/chat/{{ chat.id }}/');
+    const messages = document.getElementById('messages');
+    const typing = document.getElementById('typing');
+    const content = document.querySelector('textarea[name="content"]');
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data.type === 'message') {
+            const isSender = data.sender === '{{ user.username }}';
+            messages.innerHTML += `
+                <div class="flex ${isSender ? 'justify-end' : 'justify-start'} animate-fade-in" data-message-id="${data.message_id}">
+                    <div class="max-w-[80%] sm:max-w-[60%] md:max-w-[50%] p-3 rounded-lg ${isSender ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'} shadow relative group">
+                        ${data.file ? `<a href="${data.file}" target="_blank" class="block mb-2">
+                            ${data.file.endsWith('.jpg') || data.file.endsWith('.png') ? `<img src="${data.file}" alt="Uploaded image" class="max-w-full rounded-lg shadow-sm">` :
+                            data.file.endsWith('.mp4') ? `<video controls class="max-w-full rounded-lg"><source src="${data.file}" type="video/mp4"></video>` :
+                            `<span class="text-sm underline hover:text-blue-300">${data.file.split('/').pop()}</span>`}
+                        </a>` : ''}
+                        <p class="text-sm md:text-base break-words">${data.message}</p>
+                        <p class="text-xs mt-1 opacity-75">${data.timestamp}</p>
+                        <div class="mt-1 flex space-x-1"></div>
+                        ${isSender ? '<button class="delete-btn absolute top-0 right-0 p-1 text-red-500 opacity-0 group-hover:opacity-100" data-message-id="' + data.message_id + '">✕</button>' : ''}
+                    </div>
+                    <div class="ml-2 flex space-x-1 opacity-0 group-hover:opacity-100">
+                        <button class="reaction-btn text-sm" data-message-id="${data.message_id}" data-emoji="👍">👍</button>
+                        <button class="reaction-btn text-sm" data-message-id="${data.message_id}" data-emoji="❤️">❤️</button>
+                    </div>
+                </div>`;
+            messages.scrollTop = messages.scrollHeight;
+            if (!isSender && document.hidden) {
+                new Notification(`New message from ${data.sender}`, { body: data.message });
+            }
+            if (!isSender) {
+                ws.send(JSON.stringify({ action: 'read', message_id: data.message_id }));
+            }
+            attachButtonListeners();
+        } else if (data.type === 'typing') {
+            if (data.sender !== '{{ user.username }}') {
+                typing.textContent = `${data.sender} is typing...`;
+                setTimeout(() => typing.textContent = '', 2000);
+            }
+        } else if (data.type === 'read') {
+            const messageDiv = messages.querySelector(`[data-message-id="${data.message_id}"]`);
+            if (messageDiv && !messageDiv.querySelector('.text-green-500')) {
+                messageDiv.querySelector('div').innerHTML += '<span class="text-xs text-green-500">✓ Read</span>';
+            }
+        } else if (data.type === 'reaction') {
+            const messageDiv = messages.querySelector(`[data-message-id="${data.message_id}"]`);
+            if (messageDiv) {
+                const reactionDiv = messageDiv.querySelector('.flex.space-x-1');
+                reactionDiv.innerHTML += `<span class="text-sm">${data.emoji}</span>`;
+            }
+        } else if (data.type === 'delete') {
+            const messageDiv = messages.querySelector(`[data-message-id="${data.message_id}"]`);
+            if (messageDiv) {
+                messageDiv.remove();
+            }
+        }
+    };
+
+    content.addEventListener('input', () => {
+        ws.send(JSON.stringify({ action: 'typing' }));
+    });
+
+    function addReaction(messageId, emoji) {
+        ws.send(JSON.stringify({ action: 'reaction', message_id: messageId, emoji: emoji }));
+    }
+
+    function deleteMessage(messageId) {
+        if (confirm('Delete this message?')) {
+            ws.send(JSON.stringify({ action: 'delete', message_id: messageId }));
+        }
+    }
+
+    function attachButtonListeners() {
+        document.querySelectorAll('.reaction-btn').forEach(button => {
+            button.removeEventListener('click', button._clickHandler); // Prevent duplicate listeners
+            button._clickHandler = () => {
+                const messageId = button.getAttribute('data-message-id');
+                const emoji = button.getAttribute('data-emoji');
+                addReaction(messageId, emoji);
+            };
+            button.addEventListener('click', button._clickHandler);
+        });
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.removeEventListener('click', button._clickHandler);
+            button._clickHandler = () => {
+                const messageId = button.getAttribute('data-message-id');
+                deleteMessage(messageId);
+            };
+            button.addEventListener('click', button._clickHandler);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', attachButtonListeners);
+</script>
+
+{% endblock %}

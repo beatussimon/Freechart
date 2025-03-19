@@ -1,0 +1,25 @@
+{% extends 'chat/base.html' %}
+{% block content %}
+<div class="w-full max-w-2xl mx-auto mt-10">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Users</h1>
+    <form method="get" class="mb-6">
+        {{ search_form.query }}
+    </form>
+    <div class="bg-white shadow-lg rounded-lg p-6">
+        {% for user in users %}
+        <div class="flex items-center justify-between p-4 border-b">
+            <div class="flex items-center">
+                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="w-10 h-10 rounded-full object-cover">
+                <span class="ml-3 font-semibold text-gray-800">{{ user.username }}</span>
+            </div>
+            <form method="post" action="{% url 'chat:start_chat' user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Chat</button>
+            </form>
+        </div>
+        {% empty %}
+        <p class="text-gray-500">No users found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
